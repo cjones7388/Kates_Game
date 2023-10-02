@@ -44,10 +44,13 @@ class Wall():
         self.width = width
         self.height = height
         self.rect = pygame.Rect(self.left,self.top,self.width,self.height)
+        self.rect2 = pygame.Rect(self.left-3,self.top-3,self.width+6,self.height+6)
         self.colour = colour
         
     def draw(self):
+        pygame.draw.rect(screen,(1,1,1),self.rect2)
         pygame.draw.rect(screen,self.colour,self.rect)
+        
 
 class Background():
     def __init__(self,x,y):
@@ -78,10 +81,20 @@ class Cat():
         self.target_player = target_player
         self.bullets = []
         self.shoot_timer = 0
+        self.circle_radius = 0
+        self.increase_radius = True
 
     def draw(self):
         screen.blit(self.img,(self.x,self.y))
-
+        if self.circle_radius == 70: self.increase_radius = False
+        if self.circle_radius == self.img.get_width()/2: self.increase_radius = True
+        if self.increase_radius:
+            self.circle_radius +=1
+        else:
+            self.circle_radius -=1
+        RANDOM_COLOUR = (random.randint(1,255),random.randint(1,255),random.randint(1,255))
+        pygame.draw.circle(screen,RANDOM_COLOUR,(self.x + (self.img.get_width()/2),self.y + 5 + (self.img.get_height()/2)),self.circle_radius,random.randint(2,10))
+        pygame.draw.circle(screen,RANDOM_COLOUR,(self.x + (self.img.get_width()/2),self.y + 5 + (self.img.get_height()/2)),self.circle_radius-10,random.randint(2,10))
     def shoot(self):
         self.bullets.append(Projectile(self.x,self.y + (self.img.get_height()/2),6,self.target_player.x,self.target_player.y,self.bullet_colour))
 
@@ -93,7 +106,8 @@ class Player():
 
     def draw(self):
         screen.blit(self.img,(self.x,self.y))
-        # pygame.draw.rect(screen,(255,100,100),pygame.Rect(self.x,self.y,50,50))
+        for i in range(1,100):
+            pygame.draw.circle(screen,(255,255,255),(self.x-(random.randint(int(self.img.get_width()/2),int(self.img.get_width()))),self.y),5)
 
 class Projectile():
     def __init__(self,x,y,speed,target_player_x,target_player_y,colour):
@@ -123,7 +137,9 @@ class Projectile():
             bullet_colour = self.colour 
         if self.colour_timer == 45:
             self.colour_timer = 0   
+        pygame.draw.circle(screen,(1,1,1),(self.x,self.y),8)
         pygame.draw.circle(screen,bullet_colour,(self.x,self.y),5)
+        
        
 
 # Walls
@@ -136,8 +152,8 @@ dreamie_timer = 0
 
 # Sprites
 kate = Player(40,WINDOW_HEIGHT/2,kate_img)
-chigs = Cat(WINDOW_WIDTH + random.randint(1,100),random.randint(0,WINDOW_HEIGHT),chigs_img,kate,ORANGE)
-pippin = Cat(WINDOW_WIDTH + random.randint(1,100),random.randint(0,WINDOW_HEIGHT),pippin_img,kate,PINK)
+chigs = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),chigs_img,kate,ORANGE)
+pippin = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),pippin_img,kate,PINK)
 background_1 = Background(0,0)
 background_2 = Background(WINDOW_WIDTH,0)
 
@@ -174,6 +190,7 @@ while is_running:
     for wall in wall_list:
         wall.draw()
         wall.rect.left -= 5
+        wall.rect2.left -= 5
         if wall.rect.left < 0:
             wall_list.remove(wall)
 
@@ -191,12 +208,12 @@ while is_running:
             dreamie_list.remove(dreamie)
 
     if chigs.x < (0-chigs.img.get_width()):
-        chigs.x += WINDOW_HEIGHT + random.randint(100,1000)
+        chigs.x += (WINDOW_HEIGHT * random.randint(2,3))
     else:
         chigs.x -= 5
     
     chigs.shoot_timer += 1
-    if chigs.shoot_timer == 50:
+    if chigs.shoot_timer == 120:
         chigs.shoot()
         chigs.shoot_timer = 0
     chigs.draw()
@@ -208,12 +225,12 @@ while is_running:
             bullet.draw()
 
     if pippin.x < (0-pippin.img.get_width()):
-        pippin.x += WINDOW_HEIGHT + random.randint(100,1000)
+        pippin.x += (WINDOW_HEIGHT * random.randint(2,3))
     else:
         pippin.x -= 5
     
     pippin.shoot_timer += 1
-    if pippin.shoot_timer == 50:
+    if pippin.shoot_timer == 120:
         pippin.shoot()
         pippin.shoot_timer = 0
     pippin.draw()
@@ -230,6 +247,8 @@ while is_running:
     text = font.render(str(score),False,(255,255,255),(0,0,0))
  
     screen.blit(text, (0,0))
+
+    
     
 
     # Update the display
