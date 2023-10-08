@@ -98,17 +98,48 @@ class Cat():
     def shoot(self):
         self.bullets.append(Projectile(self.x,self.y + (self.img.get_height()/2),6,self.target_player.x,self.target_player.y,self.bullet_colour))
 
+class Particle():
+    def __init__(self,x,y,radius,colour):
+        self.x = x
+        self.y = y
+        self.radius = radius
+        self.colour = colour
+        self.y_direction = random.randint(-1,1)
+
+    def draw(self):
+        pygame.draw.circle(screen,(255,255,255),(self.x,self.y),self.radius+1)
+        pygame.draw.circle(screen,self.colour,(self.x,self.y),self.radius)
+        self.radius -= 0.5
+        self.x -= random.randint(5,15)
+        if self.y_direction == 1:
+            self.y += 1
+        else:
+            self.y += -1
+
 class Player():
     def __init__(self,x,y,img):
         self.x = x 
         self.y = y
         self.img = img
+        self.projectiles = []
+        self.allow_shoot = True
+        self.shoot_cooldown = 0
 
     def draw(self):
         screen.blit(self.img,(self.x,self.y))
-        for i in range(1,100):
-            pygame.draw.circle(screen,(255,255,255),(self.x-(random.randint(int(self.img.get_width()/2),int(self.img.get_width()))),self.y),5)
 
+    def shoot(self):
+        self.projectiles.append(Kate_Projectile(self.x + self.img.get_width(),self.y + int(self.img.get_height()/2)))
+
+class Kate_Projectile():
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+
+    def draw(self):
+        pygame.draw.circle(screen,(1,1,1),(self.x,self.y),10)
+        pygame.draw.circle(screen,(255,255,255),(self.x,self.y),9)
+        
 class Projectile():
     def __init__(self,x,y,speed,target_player_x,target_player_y,colour):
         self.x = x
@@ -116,8 +147,10 @@ class Projectile():
         self.speed = speed
         self.colour = colour
         self.colour_timer = 0
-        self.target_player_x = target_player_x
-        self.target_player_y = target_player_y
+        # Doubling the x and y distances for the target to enable it to leave the screen.
+        # By subtracting the x and y differences
+        self.target_player_x = (target_player_x - (self.x - target_player_x))
+        self.target_player_y = (target_player_y - (self.y - target_player_y))
 
     def draw(self):
         x_change = self.x - self.target_player_x
@@ -150,8 +183,12 @@ wall_timer = 0
 dreamie_list = []
 dreamie_timer = 0
 
+# Particles
+particles_list = []
+particle_timer = 0
+
 # Sprites
-kate = Player(40,WINDOW_HEIGHT/2,kate_img)
+kate = Player(80,WINDOW_HEIGHT/2,kate_img)
 chigs = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),chigs_img,kate,ORANGE)
 pippin = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),pippin_img,kate,PINK)
 background_1 = Background(0,0)
@@ -169,6 +206,13 @@ while is_running:
         kate.y -= 8
     if keys[pygame.K_DOWN]:
         kate.y += 8
+    if keys[pygame.K_RIGHT] and kate.x < 250:
+        kate.x += 8
+    if keys[pygame.K_LEFT] and kate.x > 1:
+        kate.x -= 8
+    if keys[pygame.K_SPACE] and kate.allow_shoot:
+        kate.shoot()
+        kate.allow_shoot = False
     
     # Erase old drawings by filling screen
     background_1.draw()
@@ -218,8 +262,7 @@ while is_running:
         chigs.shoot_timer = 0
     chigs.draw()
     for bullet in chigs.bullets:
-        print(bullet.colour_timer)
-        if int(bullet.x) <= 40:
+        if int(bullet.x) < 0 or int(bullet.y) < 0 or bullet.x == bullet.target_player_x:
             chigs.bullets.remove(bullet)
         else:
             bullet.draw()
@@ -235,12 +278,38 @@ while is_running:
         pippin.shoot_timer = 0
     pippin.draw()
     for bullet in pippin.bullets:
-        if int(bullet.x) <= 40:
+        if int(bullet.x) < 0 or int(bullet.y) < 0 or bullet.x == bullet.target_player_x:
             pippin.bullets.remove(bullet)
         else:
             bullet.draw()
 
+    if particle_timer == 1:
+        particle_x = kate.x - random.randint(1,100)
+        particle_y = random.randint((int(kate.y)),int(kate.y+kate.img.get_height()))
+        RANDOM_PARTICLE_COLOUR = (random.randint(1,255),random.randint(1,255),random.randint(1,255))
+        particles_list.append(Particle(particle_x,particle_y,10,RANDOM_PARTICLE_COLOUR))
+        particle_timer = 0
+
+    particle_timer += 1
+    for particle in particles_list:
+        if particle.radius == 1:
+            particles_list.remove(particle)
+        else:
+            particle.draw()
+
     kate.draw()
+    kate.shoot_cooldown += 1
+    if kate.shoot_cooldown == 60: 
+        kate.shoot_cooldown = 0
+        kate.allow_shoot = True
+    for bullet in kate.projectiles:
+        bullet.x += 5
+
+        if bullet.x > WINDOW_WIDTH:
+            kate.projectiles.remove(bullet)
+        else:
+            bullet.draw()
+
 
     # create a text surface object, on which text is drawn on it.
     score += 1
