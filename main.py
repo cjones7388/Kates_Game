@@ -98,6 +98,29 @@ class Cat():
     def shoot(self):
         self.bullets.append(Projectile(self.x,self.y + (self.img.get_height()/2),6,self.target_player.x,self.target_player.y,self.bullet_colour))
 
+class Ray():
+    def __init__(self,x,y,angle,radius):
+        self.x = x
+        self.y = y
+        self.angle = angle
+        self.radius = radius
+        self.direction = 'clockwise'
+
+    def draw(self):
+        if self.angle > 200:
+            self.direction = 'anticlockwise'
+        if self.angle < 100:
+            self.direction = 'clockwise'
+        if self.direction == 'anticlockwise':
+            self.angle -= 1
+        else:
+            self.angle += 1
+        point_a = (self.x,self.y)
+        x_vector = math.cos(math.radians(self.angle))
+        y_vector = math.sin(math.radians(self.angle))
+        point_b = (self.x + (x_vector * self.radius),self.y + (y_vector * self.radius))
+        pygame.draw.line(screen,(200,200,200),point_a,point_b)
+
 class Particle():
     def __init__(self,x,y,radius,colour):
         self.x = x
@@ -193,6 +216,13 @@ chigs = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),c
 pippin = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),pippin_img,kate,PINK)
 background_1 = Background(0,0)
 background_2 = Background(WINDOW_WIDTH,0)
+
+# Rays
+ray_list = []
+for i in range(1,1000):
+    angle = random.randint(90,200)
+    ray = Ray(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,angle,500)
+    ray_list.append(ray)
 
 
 # Main game loop
@@ -309,6 +339,9 @@ while is_running:
             kate.projectiles.remove(bullet)
         else:
             bullet.draw()
+
+    for ray in ray_list:
+        ray.draw()
 
 
     # create a text surface object, on which text is drawn on it.
