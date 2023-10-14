@@ -30,6 +30,8 @@ background_img =  pygame.image.load('assets/background.png')
 background_img = pygame.transform.scale(background_img, (WINDOW_WIDTH,WINDOW_HEIGHT))
 dreamie_img =  pygame.image.load('assets/dreamies_img.png')
 dreamie_img = pygame.transform.scale(dreamie_img, (80,80))
+pippin_boss_img =  pygame.image.load('assets/boss_pippin.png')
+# pippin_boss_img = pygame.transform.scale(pippin_boss_img, (80,80))
 
 # Game variables
 clock = pygame.time.Clock()
@@ -104,22 +106,28 @@ class Ray():
         self.y = y
         self.angle = angle
         self.radius = radius
-        self.direction = 'clockwise'
+        self.swing_count_max = 90
+        self.swing_count = 0
+        self.swing_direction = 1
+        # self.direction = 'clockwise'
 
     def draw(self):
-        if self.angle > 200:
-            self.direction = 'anticlockwise'
-        if self.angle < 100:
-            self.direction = 'clockwise'
-        if self.direction == 'anticlockwise':
-            self.angle -= 1
-        else:
+        # if the angle has changed by 90 degrees, change direction and reset the angle change counter
+        if self.swing_count == 90: 
+            self.swing_direction *= -1
+            self.swing_count = 0
+        if self.swing_direction == 1:
             self.angle += 1
+            self.swing_count +=1
+        if self.swing_direction == -1:
+            self.angle -= 1
+            self.swing_count +=1
+            
         point_a = (self.x,self.y)
         x_vector = math.cos(math.radians(self.angle))
         y_vector = math.sin(math.radians(self.angle))
         point_b = (self.x + (x_vector * self.radius),self.y + (y_vector * self.radius))
-        pygame.draw.line(screen,(200,200,200),point_a,point_b)
+        pygame.draw.line(screen,(200,200,200),point_a,point_b,15)
 
 class Particle():
     def __init__(self,x,y,radius,colour):
@@ -153,6 +161,27 @@ class Player():
 
     def shoot(self):
         self.projectiles.append(Kate_Projectile(self.x + self.img.get_width(),self.y + int(self.img.get_height()/2)))
+
+class Boss():
+    def __init__(self,x,y,img):
+        self.x = x
+        self.y = y
+        self.img = img
+        self.shoot = True
+        self.ray_list = []
+        
+    def draw(self):
+        for ray in self.ray_list:
+            ray.x = self.x + 80
+            ray.draw()
+
+    def add_rays(self):
+        if self.shoot:
+            ray_random_start_angle = random.randint(100,150)
+            for i in range(ray_random_start_angle,ray_random_start_angle+30):
+                angle = i
+                ray = Ray(self.x,self.y+170,angle,750)
+                self.ray_list.append(ray)
 
 class Kate_Projectile():
     def __init__(self,x,y):
@@ -217,12 +246,13 @@ pippin = Cat(WINDOW_WIDTH * random.randint(2,4),random.randint(0,WINDOW_HEIGHT),
 background_1 = Background(0,0)
 background_2 = Background(WINDOW_WIDTH,0)
 
-# Rays
-ray_list = []
-for i in range(1,1000):
-    angle = random.randint(90,200)
-    ray = Ray(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,angle,500)
-    ray_list.append(ray)
+# # Rays
+# ray_list = []
+# ray_random_start_angle = random.randint(100,150)
+# for i in range(ray_random_start_angle,ray_random_start_angle+30):
+#     angle = i
+#     ray = Ray(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,angle,500)
+#     ray_list.append(ray)
 
 
 # Main game loop
@@ -243,6 +273,14 @@ while is_running:
     if keys[pygame.K_SPACE] and kate.allow_shoot:
         kate.shoot()
         kate.allow_shoot = False
+    if keys[pygame.K_b]:
+        boss = Boss(WINDOW_WIDTH + 400,WINDOW_WIDTH/4,pippin_boss_img)
+        # ray_random_start_angle = random.randint(100,150)
+        # for i in range(ray_random_start_angle,ray_random_start_angle+30):
+        #     angle = i
+        #     ray = Ray(boss.x,boss.y,angle,500)
+        #     boss.ray_list.append(ray)
+
     
     # Erase old drawings by filling screen
     background_1.draw()
@@ -340,8 +378,18 @@ while is_running:
         else:
             bullet.draw()
 
-    for ray in ray_list:
-        ray.draw()
+    # Boss
+    try:
+        if boss.x > WINDOW_WIDTH-200:
+            boss.x -=1
+        elif boss.x == WINDOW_WIDTH-200:
+            if boss.shoot:
+                boss.add_rays()
+                boss.shoot = False
+        boss.draw()
+        screen.blit(boss.img,(boss.x,boss.y))
+    except:
+        pass
 
 
     # create a text surface object, on which text is drawn on it.
